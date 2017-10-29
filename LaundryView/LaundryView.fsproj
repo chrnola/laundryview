@@ -66,6 +66,7 @@
     <Compile Include="StaticData.fs" />
     <Compile Include="DynamicData.fs" />
     <Compile Include="EnhancedModeApi.fs" />
+    <Compile Include="Status.fs" />
     <None Include="App.config" />
     <None Include="paket.references" />
     <None Include="script.fsx" />

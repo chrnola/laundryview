@@ -18,6 +18,15 @@ and MachineComponentStatus =
     | Unavailable of cycleRemaining: int * cycleDuration: int
     /// The machine component's state could not be determined.
     | Unknown
+with
+    static member isCurrentlyUsable x =
+        match x.status with
+        | MachineComponentStatus.OutOfService
+        | MachineComponentStatus.Unknown
+        | MachineComponentStatus.Unavailable _ ->
+            false
+        | MachineComponentStatus.Available ->
+            true
 
 module Parser =
     open FParsec

@@ -67,8 +67,8 @@ let private makeRequestAsFlashApp roomId cookie url =
 
 type private ResponseType = ``Static`` of string | Dynamic of string
 
-let private fetchData startingUrl roomId = job {
-    let! sessionToken = blessSession startingUrl
+let getLaundryDataForRoom propertySlug roomId = job {
+    let! sessionToken = blessSession propertySlug
 
     match sessionToken with
     | Some cookie ->
@@ -97,13 +97,13 @@ let private fetchData startingUrl roomId = job {
                 | Ok machines -> machines
                 | Error msg -> failwith (sprintf "Error parsing static data: %s" msg)
 
-            // TODO: Parse the dynamic data
+            let states =
+                match DynamicData.Parser.parseDynamicData d with
+                | Ok states -> states
+                | Error msg -> failwith (sprintf "Error parsing dynamic data: %s" msg)
 
-            return mach, d
+            return mach, states
         | _ -> return failwith "Could not extract static and/or dynamic response"
     | None ->
         return failwith "Could not get session token"
 }
-
-let getLaundryDataForRoom propertySlug roomId =
-    fetchData propertySlug roomId |> run

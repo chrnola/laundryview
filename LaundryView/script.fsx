@@ -4,6 +4,7 @@
 #r "Hopac"
 #r "HttpFs"
 #r "FParsec"
+#r "FParsecCS"
 #r "LaundryView"
 
 open LaundryView
@@ -11,4 +12,4 @@ open LaundryView
 let slug = "..."
 let roomId = "..."
 
-EnhancedModeApi.getLaundryDataForRoom slug roomId
+Status.getNumberOfFreeMachines slug roomId
