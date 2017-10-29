@@ -8,3 +8,5 @@ type ParserResult<'Result, 'UserState> with
             Result.Ok (result)
         | ParserResult.Failure (errorMessage, _, _) ->
             Result.Error (errorMessage)
+
+let manyChoose p = many p |>> List.choose id
