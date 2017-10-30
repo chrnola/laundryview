@@ -107,3 +107,6 @@ let getLaundryDataForRoom propertySlug roomId = job {
     | None ->
         return failwith "Could not get session token"
 }
+
+// Force the compiler not to prune the reference to Hopac.Platform -_-
+let private _x = Hopac.Platform.Scheduler.create
