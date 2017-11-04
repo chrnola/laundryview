@@ -15,10 +15,9 @@ let private indexStatesBySerial =
 /// Calls the API, parses the responses, joins the static
 /// and dynamic data, and determines the overall status
 /// of the given room in the given property.
-let getNumberOfFreeMachines propertySlug roomId =
-    let machines, states =
+let getNumberOfFreeMachines propertySlug roomId = async {
+    let! machines, states =
         getLaundryDataForRoom propertySlug roomId
-        |> Hopac.Hopac.run
 
     let statesBySerial = indexStatesBySerial states
 
@@ -43,5 +42,7 @@ let getNumberOfFreeMachines propertySlug roomId =
         List.filter (snd >> MachineComponentStatus.isCurrentlyUsable)
         >> List.length
 
-    { FreeMachines.washers = numAvailable washers
-      dryers = numAvailable dryers }
+    return
+        { FreeMachines.washers = numAvailable washers
+          dryers = numAvailable dryers }
+    }
