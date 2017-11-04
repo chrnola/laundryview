@@ -3,9 +3,8 @@
 /// Flash application (laundry_room.php)
 module LaundryView.EnhancedModeApi
 
-open Hopac
-open HttpFs.Client
-open HttpFs.Client.Request
+open AsyncExtensions
+open HttpClient
 
 let [<Literal>] private baseUrl = "http://www.laundryview.com"
 let private staticDataUrl = sprintf "%s/staticRoomData.php" baseUrl
@@ -14,38 +13,30 @@ let private dynamicDataUrl = sprintf "%s/dynamicRoomData.php" baseUrl
 let [<Literal>] private userAgent =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.62 Safari/537.36"
 
-let private blessSession propertyCode = job {
+let private blessSession propertyCode = async {
     let startingUrl = sprintf "%s/%s" baseUrl propertyCode
 
     let! resp =
-        Request.createUrl Get startingUrl
-        |> Request.setHeader (RequestHeader.UserAgent(userAgent))
-        |> Request.autoFollowRedirectsDisabled
-        |> getResponse
+        createRequest Get startingUrl
+        |> withHeader (RequestHeader.UserAgent(userAgent))
+        |> withAutoFollowRedirectsDisabled
+        |> getResponseAsync
 
     let cookieName = "PHPSESSID"
 
-    match Map.tryFind cookieName resp.cookies with
+    match Map.tryFind cookieName resp.Cookies with
     | Some sessionId ->
-        let cookie =
-            { Cookie.name = cookieName
-              Cookie.domain = Some (".laundryview.com")
-              Cookie.path = Some ("/")
-              Cookie.expires = None
-              Cookie.httpOnly = false
-              Cookie.value = sessionId
-              Cookie.secure = false }
-
+        let cookie = { name = cookieName; value = sessionId }
         // We have to follow the redirect before the session
         // will be blessed. -_-
         do!
-            resp.headers
+            resp.Headers
             |> Map.find ResponseHeader.Location // Redirect URL from 1st request
-            |> Request.createUrl Get
-            |> Request.cookie cookie
-            |> Request.setHeader (RequestHeader.UserAgent(userAgent))
-            |> getResponse
-            |> Alt.Ignore
+            |> createRequest Get
+            |> withCookie cookie
+            |> withHeader (RequestHeader.UserAgent(userAgent))
+            |> getResponseAsync
+            |> Async.Ignore
 
         return Some cookie
     | None -> return None
@@ -54,20 +45,20 @@ let private blessSession propertyCode = job {
 let private makeRequestAsFlashApp roomId cookie url =
     let referer = sprintf "%s/laundry_room.php?lr=%s" baseUrl roomId
 
-    Request.createUrl Get url
-    |> Request.queryStringItem "location" roomId
-    |> Request.cookie cookie
-    |> Request.setHeader (RequestHeader.UserAgent(userAgent))
-    |> Request.setHeader (RequestHeader.Custom("X-Requested-With", "ShockwaveFlash/27.0.0.170"))
-    |> Request.setHeader (RequestHeader.Accept("*/*"))
-    |> Request.setHeader (RequestHeader.Referer(referer))
-    |> Request.setHeader (RequestHeader.AcceptLanguage("en-US,en;q=0.9"))
-    |> Request.autoDecompression (DecompressionScheme.GZip ||| DecompressionScheme.Deflate)
-    |> Request.responseAsString
+    createRequest Get url
+    |> withQueryStringItem { name = "location"; value = roomId }
+    |> withCookie cookie
+    |> withHeader (RequestHeader.UserAgent(userAgent))
+    |> withHeader (RequestHeader.Custom({ name = "X-Requested-With"; value = "ShockwaveFlash/27.0.0.170"}))
+    |> withHeader (RequestHeader.Accept("*/*"))
+    |> withHeader (RequestHeader.Referer(referer))
+    |> withHeader (RequestHeader.AcceptLanguage("en-US,en;q=0.9"))
+    |> withAutoDecompression (DecompressionScheme.GZip ||| DecompressionScheme.Deflate)
+    |> getResponseBodyAsync
 
 type private ResponseType = ``Static`` of string | Dynamic of string
 
-let getLaundryDataForRoom propertySlug roomId = job {
+let getLaundryDataForRoom propertySlug roomId = async {
     let! sessionToken = blessSession propertySlug
 
     match sessionToken with
@@ -75,9 +66,9 @@ let getLaundryDataForRoom propertySlug roomId = job {
         let requester = makeRequestAsFlashApp roomId cookie
 
         let! staticAndDynamicData =
-            [ requester staticDataUrl |> Job.map ResponseType.``Static``
-              requester dynamicDataUrl |> Job.map ResponseType.Dynamic ]
-            |> Job.conCollect
+            [ requester staticDataUrl |> Async.Map ResponseType.``Static``
+              requester dynamicDataUrl |> Async.Map ResponseType.Dynamic ]
+            |> Async.Parallel
 
         let (stResp, dynResp) =
             staticAndDynamicData
