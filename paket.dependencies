@@ -2,3 +2,4 @@ source https://www.nuget.org/api/v2
 nuget FParsec >= 1.0.3
 nuget FSharp.Core >= 4.2.3
 nuget Http.fs >= 4.1.2
+nuget Hopac 0.3.21
