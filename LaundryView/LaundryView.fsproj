@@ -64,6 +64,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="FParsecExtensions.fs" />
+    <Compile Include="AsyncExtensions.fs" />
     <Compile Include="StaticData.fs" />
     <Compile Include="DynamicData.fs" />
     <Compile Include="EnhancedModeApi.fs" />
