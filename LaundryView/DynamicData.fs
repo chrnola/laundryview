@@ -29,6 +29,7 @@ with
             true
 
 module Parser =
+    open ChoiceExtensions
     open FParsec
     open FParsecExtensions
 
@@ -81,10 +82,7 @@ module Parser =
                 DynamicConfigLine.Skip ()
         static member toOption = function
             | DynamicConfigLine.SingleMachineStatus (_, single) ->
-                single
-                |> DynamicData.toMachineComponentState
-                |> List.singleton
-                |> Some
+                Some [ DynamicData.toMachineComponentState single ]
             | DynamicConfigLine.DoubleMachineStatus (_, (fst, snd)) ->
                 let first = DynamicData.toMachineComponentState fst
                 let second = DynamicData.toMachineComponentState snd
@@ -150,9 +148,11 @@ module Parser =
 
     let private pDynamicData = many pDynamicDataLine
 
+    type private Choice = Choice<DynamicConfigLine list, string>
+
     /// Parses the given dynamic data string from the LaundryView API
     let parseDynamicData =
         run pDynamicData
-        >> ParserResult.toResult
-        >> Result.map (List.choose DynamicConfigLine.toOption)
-        >> Result.map (List.collect id)
+        >> ParserResult.toChoice
+        >> Choice.Map (List.choose DynamicConfigLine.toOption)
+        >> Choice.Map (List.collect id)

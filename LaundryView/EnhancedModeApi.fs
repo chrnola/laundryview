@@ -85,13 +85,13 @@ let getLaundryDataForRoom propertySlug roomId = async {
         | Some s, Some d ->
             let mach =
                 match StaticData.Parser.parseStaticData s with
-                | Ok machines -> machines
-                | Error msg -> failwith (sprintf "Error parsing static data: %s" msg)
+                | Choice1Of2 machines -> machines
+                | Choice2Of2 msg -> failwith (sprintf "Error parsing static data: %s" msg)
 
             let states =
                 match DynamicData.Parser.parseDynamicData d with
-                | Ok states -> states
-                | Error msg -> failwith (sprintf "Error parsing dynamic data: %s" msg)
+                | Choice1Of2 states -> states
+                | Choice2Of2 msg -> failwith (sprintf "Error parsing dynamic data: %s" msg)
 
             return mach, states
         | _ -> return failwith "Could not extract static and/or dynamic response"

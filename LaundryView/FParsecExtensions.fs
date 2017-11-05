@@ -3,10 +3,10 @@
 open FParsec
 
 type ParserResult<'Result, 'UserState> with
-    static member toResult = function
+    static member toChoice = function
         | ParserResult.Success (result : 'Result, _ : 'UserState, _) ->
-            Result.Ok (result)
+            Choice1Of2 (result)
         | ParserResult.Failure (errorMessage, _, _) ->
-            Result.Error (errorMessage)
+            Choice2Of2 (errorMessage)
 
 let manyChoose p = many p |>> List.choose id

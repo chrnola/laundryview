@@ -22,6 +22,7 @@ and
       serial: string }
 
 module Parser =
+    open ChoiceExtensions
     open FParsec
     open FParsecExtensions
 
@@ -78,8 +79,10 @@ module Parser =
 
     let private pStaticData = many pStaticDataLine
 
+    type private Choice = Choice<StaticConfigLine list, string>
+
     /// Parses the given static data string from the LaundryView API
     let parseStaticData =
         run pStaticData
-        >> ParserResult.toResult
-        >> Result.map (List.choose StaticConfigLine.toOption)
+        >> ParserResult.toChoice
+        >> Choice.Map (List.choose StaticConfigLine.toOption)
